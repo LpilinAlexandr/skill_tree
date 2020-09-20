@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" type="text/css">
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.ico' %}"/>
+    <link rel="stylesheet" href="{% static 'css/skills.css' %}" type="text/css">
+    <script src="{% static 'js/jquery-3.5.1.min.js' %}"></script>
+    <script src="{% static 'js/skills.js' %}"></script>
+    <title>Дерево скиллов</title>
+
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <header>
+            <div class="header">
+                <div id="popup-import-button" class="headerBlock">
+                    <button class="btn btn-outline-dark  btn-block">Импорт/Экспорт</button>
+                </div>
+
+                <div id="popup-import">
+                    <div id="popup-import-box">
+                        <div>
+                            <a href="{% url 'download_three' %}" target="_blank">
+                                <button class="btn btn-outline-dark btn-block">Импортировать ветку скиллов</button>
+                            </a>
+                        </div>
+
+                        <div id="import-export">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="file" name="export" required>
+                                <button class="btn btn-outline-dark btn-block">
+                                    Экспортировать ветку скиллов. Формат: .csv
+                                </button>
+                            </form>
+                        </div>
+
+                        <div>
+                            <form method="get">
+                                <input type="hidden" name="delete" value="ok">
+                                <button class="btn btn-outline-dark btn-block">Удалить моё дерево</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="myThreeContainer headerBlock">
+                    <button id="myThree" class="btn btn-outline-dark btn-block">Мои скиллы</button>
+                    <button id="_myThree" class="btn btn-outline-dark btn-block">Вернуться</button>
+                </div>
+
+                <div id="expQuantity" class="headerBlock">
+                    <div id="expButton">
+                        <form method="get" action="{% url 'ajax_form' %}">
+                            <input type="button" name="exp" value="+5 exp" id="plusExp" class="btn btn-outline-dark btn-block">
+                        </form>
+                    </div>
+
+                    <div id="expContainer">
+                        {% if exp_points.quantity == 0%}
+                            <h4 id="plusExph4">Exp: 0</h4>
+                        {% else %}
+                            <h4>Exp:
+                                <span id="exp">{{exp_points.quantity}}</span>
+                            </h4>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+
+    <div class="typeContainer">
+
+        {% for type in types_attacks %}
+        <div class="typeBox types" >
+            <div class="buttonBox">
+                 <button class="buttonTypes btn btn-dark">{{type}}</button>
+                 <button class="backOut btn btn-dark">Вернуться</button>
+            </div>
+
+           <div class="weaponBox">
+                {% for weapon in weapons %}
+                  {% if type == weapon.category%}
+                   <div class="threeContainer">
+                       <div class="weaponImgBox">
+                           <img src="{{ weapon.img.url }}" height="250">
+                       </div>
+
+                       <div class="skillBox">
+                           {% for x in range %}
+                                <div class="skillLevel">
+                                {% for skill in skills %}
+                                {% if skill.weapon == weapon %}
+                                {% if skill.level == x %}
+                                    <div >
+                                        <form method="get">
+                                            <div class="ckillImgContainer">
+                                                <div class="description">
+                                                    <p>{{skill.skill_name}}</p>
+                                                </div>
+                                                <div class="descriptionImg" id="__{{skill}}">
+                                                    <img src="{{ skill.img.url }}" height="80">
+                                                </div>
+                                                <script>
+                                                    $(function(){
+                                                        let elem = document.getElementById('__{{skill}}');
+                                                        let popup = document.getElementById('{{ skill }}');
+
+                                                        $(elem).click(function(){
+                                                                $(popup).fadeIn();
+                                                            });
+
+
+                                                        $(popup).click(function(event){
+                                                            if(event.target == this) {
+                                                                $(this).fadeOut();
+                                                            }
+                                                        })
+                                                    });
+                                                </script>
+
+                                                <div id="{{ skill }}" class="popup-skill">
+                                                    <div id="_{{ skill }}" class="miniPopup" >
+                                                        <div class="descImgPopup">
+                                                            <h3>{{ skill.skill_name }}</h3>
+                                                            <img src="{{ skill.img.url }}" height="200">
+                                                        </div>
+                                                        <div class="descDescPopup">
+                                                            <p><b>Скилл {{ skill.level }} уровня.</b></p>
+                                                            <p><b>Описание:</b> {{ skill.description }}</p>
+                                                            <p><b>Требуемое оружие:</b> {{ skill.weapon }}</p>
+
+                                                            <p><b>Урон:</b> {{ skill.damage }}</p>
+                                                            <p><b>Стоимость Exp:</b> {{ skill.cost }}</p>
+                                                            <p><b>Для прокачки требуется:</b>
+                                                            <span id="{{ skill }}__" style="display: inline;">Только {{ skill.cost }} Exp</span></p>
+                                                            {% for rel in skill_relations %}
+                                                                {% if rel.child == skill%}
+                                                                <script>
+                                                                    $(function(){
+                                                                        let elem = document.getElementById('{{ skill }}__');
+                                                                        $(elem).css('display','none');
+                                                                    });
+                                                                </script>
+                                                                <h6>- {{rel.parent}}</h6>
+                                                                {% endif%}
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="descriptionButton">
+                                                    <input type="hidden" name="skill" value="{{skill}}">
+
+                                                    {% if skill in no_ready_skills%}
+                                                        <p style="color: red;">Нельзя выучить</p>
+                                                    {% elif skill in skill_list%}
+                                                        <p style="color: green;">Уже выучен</p>
+                                                    {% elif skill in ready_skills%}
+
+                                                        {% if exp_points.quantity < skill.cost %}
+                                                            <p style="color: red;">Не хватает Exp</p>
+                                                        {% else %}
+                                                            <button class="btn btn-outline-dark">Выучить</button>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                                {% endif %}
+                                {% endfor %}
+                                </div>
+                           {% endfor %}
+
+                       </div>
+                   </div>
+                  {% endif %}
+                {% endfor %}
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <div id="popup-container">
+        <div id="popup">
+
+        {% for type in types_attacks %}
+        <div class="typeBox __types" >
+            <div class="buttonBox">
+                <button class="__buttonTypes btn btn-dark">{{type}}</button>
+                <button class="__backOut btn btn-dark">Вернуться</button>
+            </div>
+
+            <div class="weaponBox">
+                {% for weapon in weapons %}
+                  {% if type == weapon.category%}
+                    <div class="threeContainer">
+                        <div class="weaponImgBox">
+                           <img src="{{ weapon.img.url }}" height="250">
+                        </div>
+                        <div class="mySkillBox">
+
+                            {% for x in range %}
+                                <div class="skillLevel">
+                                {% for skill in my_skills %}
+                                {% if skill.skill.weapon == weapon %}
+                                {% if skill.skill.level == x %}
+                                        <form method="get">
+                                            <div class="ckillImgContainer">
+                                                <div class="description">
+                                                    <p>{{skill.skill.skill_name}}</p>
+
+                                                </div>
+
+                                                <div class="descriptionImg">
+                                                    <img src="{{ skill.skill.img.url }}" height="100" id="_{{skill.skill}}_" style="cursor:pointer;">
+                                                </div>
+                                                <script>
+                                                    $(function(){
+                                                        let elem_ = document.getElementById('_{{skill.skill}}_');
+                                                        let popup_ = document.getElementById('my{{ skill.skill }}');
+
+                                                        $(elem_).click(function(){
+                                                                $(popup_).fadeIn();
+                                                            });
+
+
+                                                        $(popup_).click(function(event){
+                                                            if(event.target == this) {
+                                                                $(this).fadeOut();
+                                                            }
+                                                        })
+                                                    });
+                                            </script>
+
+                                                <div id="my{{ skill.skill }}" class="popup-skill">
+                                                    <div id="my_{{ skill.skill }}" class="miniPopup" >
+                                                        <div class="descImgPopup">
+                                                            <h3>{{ skill.skill.skill_name }}</h3>
+                                                            <img src="{{ skill.skill.img.url }}" height="200">
+                                                        </div>
+                                                        <div class="descDescPopup">
+                                                            <p><b>Описание:</b> {{ skill.skill.description }}</p>
+                                                            <p><b>Требуемое оружие:</b> {{ skill.skill.weapon }}</p>
+                                                            <p><b>Уровень скилла:</b> {{ skill.skill.level }}</p>
+                                                            <p><b>Урон:</b> {{ skill.skill.damage }}</p>
+                                                            <p><b>Стоимость Exp:</b> {{ skill.skill.cost }}</p>
+                                                            <p><b>Для прокачки требуется:</b></p>
+                                                            <p id="my{{ skill.skill }}__" style="display: inline;">Только {{ skill.skill.cost }} Exp</p>
+                                                            {% for rel in skill_relations %}
+                                                                {% if rel.child == skill.skill%}
+                                                                <script>
+                                                                    $(function(){
+                                                                        let elem = document.getElementById('my{{ skill.skill }}__');
+                                                                        $(elem).css('display','none');
+                                                                    });
+                                                                </script>
+                                                                <h6>- {{rel.parent}}</h6>
+                                                                {% endif%}
+                                                            {% endfor %}
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+
+                                                <div class="descriptionButton">
+                                                    <h6>Уровень: <span>{{skill.level}}</span> - Урон: <span>{{skill.damage}}</span></h6>
+                                                    <input type="hidden" name="skill_upgrade" value="{{skill.skill}}">
+                                                    {% if exp_points.quantity >= skill.skill.cost%}
+                                                        <button class="btn btn-outline-success">Прокачать</button>
+                                                    {% else %}
+                                                        <span>Не хватает Exp</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </form>
+                                {% endif %}
+                                {% endif %}
+                                {% endfor %}
+                                </div>
+                           {% endfor %}
+
+
+                        </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+
+        {% endfor %}
+        </div>
+    </div>
+    {% else %}
+
+        <h1>Сначала необходимо войти: <a href="{% url 'login'%}" ></a></h1>
+
+    {% endif %}
+</body>
+</html>
